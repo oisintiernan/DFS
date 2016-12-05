@@ -11,4 +11,6 @@ you will continue to use the original API while compiling your service. This all
 upgrade to an evolving API on a timeline they prefer. 
 
 Note then, that this approach only works if you maintain an online git repository and push API changes in this library
-to it. Howeer, once you do this, and updates t
+to it. 
+
+This project is a companion to the REST service [use-haskell](https://bitbucket.org/esjmb/use-haskell) and REST client [use-haskell-client](https://bitbucket.org/esjmb/use-haskell-client).
