@@ -48,7 +48,7 @@ data ResponseData = ResponseData { response :: String
 -- each method is noted in the last element in the :> chain.
 
 type API = "load_environment_variables" :> QueryParam "name" String :> Get '[JSON] ResponseData
-      :<|> "getREADME"                  :> Get '[JSON] ResponseData
+      :<|> "getREADME"                  :> QueryParam "path" String :>Get '[JSON] ResponseData
       :<|> "storeMessage"               :> ReqBody '[JSON] Message  :> Post '[JSON] Bool
       :<|> "searchMessage"              :> QueryParam "name" String :> Get '[JSON] [Message]
       :<|> "performRESTCall"            :> QueryParam "filter" String  :> Get '[JSON] ResponseData
