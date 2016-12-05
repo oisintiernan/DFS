@@ -225,16 +225,16 @@ server = loadEnvironmentVariable
     --         // code goes here
     --   }
 
-    getREADME, getREADME' :: Handler ResponseData -- fns with no input, second getREADME' is for demo below
-    getREADME = liftIO $ do
+    getREADME:: Maybe String -> Handler ResponseData -- fns with no input, second getREADME' is for demo below
+    getREADME ms = liftIO $ do
       [rPath] <- getArgs         -- alternatively (rPath:xs) <- getArgs
-      s       <- readFile rPath
+      putStrLn "hello"
+      s       <- readFile "home/ois/TF/TF1"
       return $ ResponseData s
 
     -- here is an alternative implementation of getREADME, more in keeping the Haskell style
     -- takes a bit of practice, but very easy to read, if yuo understand the symbols, and very hard to get wrong.
     -- in english, read file idenfitied by the head of the argument list and return as a ResponseData structure
-    getREADME' = liftIO $ ResponseData <$> (readFile . head =<< getArgs)
 
     -- Here, as a comparison or relative code complexity,
     -- is an example of how to perform the equivalent of the

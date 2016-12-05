@@ -20,7 +20,7 @@ restAPI = Proxy
 -- Each function matches one of the endpoints in type API from UseHaskellAPI.hs
 
 loadEnvVars :: Maybe String -> ClientM ResponseData
-getREADME :: ClientM ResponseData
+getREADME :: Maybe String -> ClientM ResponseData
 storeMessage :: Message -> ClientM Bool
 searchMessage :: Maybe String -> ClientM [Message]
 performRestCall :: Maybe String -> ClientM ResponseData
