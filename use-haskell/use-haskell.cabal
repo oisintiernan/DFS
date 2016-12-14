@@ -37,6 +37,8 @@ library
                      , mtl
                      , http-client
                      , use-haskell-api
+                     , directory
+                     , split
   default-language:    Haskell2010
 
 executable use-haskell-exe

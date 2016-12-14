@@ -37,6 +37,20 @@ deriving instance ToBSON   String
 data ResponseData = ResponseData { response :: String
                                  } deriving (Generic, ToJSON, FromJSON,FromBSON, Show)
 
+data FileData = FileData { filep::FilePath
+                         , contents::String
+                         , project:: String
+                         , filen:: String
+                         } deriving (Generic,ToJSON,FromJSON,FromBSON,Show)
+
+
+data FileHere = FileHere { files:: [FilePath]
+                         } deriving (Generic,ToJSON,FromJSON,Show)                        
+
+data Init = Init { purpose:: String
+                  ,functions:: String
+                  ,security:: String
+                 } deriving (Generic,ToJSON,FromJSON,FromBSON,Show)
 -- | Next we will define the API for the REST service. This is defined as a 'type' using a special syntax from the
 -- Servant Library. A REST endpoint is defined by chaining together a series of elements in the format `A :> B :> C`. A
 -- set of rest endpoints are chained in the format `X :<|> Y :<|> Z`. We define a set of endpoints to demonstrate
@@ -48,7 +62,9 @@ data ResponseData = ResponseData { response :: String
 -- each method is noted in the last element in the :> chain.
 
 type API = "load_environment_variables" :> QueryParam "name" String :> Get '[JSON] ResponseData
-      :<|> "getREADME"                  :> QueryParam "path" String :> Get '[JSON] ResponseData
+      :<|> "getREADME"                  :> QueryParam "path" FilePath :> Get '[JSON] FileData
       :<|> "storeMessage"               :> ReqBody '[JSON] Message  :> Post '[JSON] Bool
       :<|> "searchMessage"              :> QueryParam "name" String :> Get '[JSON] [Message]
       :<|> "performRESTCall"            :> QueryParam "filter" String  :> Get '[JSON] ResponseData
+      :<|> "files"                      :> QueryParam "path" FilePath :> Get '[JSON] FileHere
+      :<|> "init"                       :> Get '[JSON] Init

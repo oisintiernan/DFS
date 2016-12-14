@@ -42,6 +42,13 @@
   (major1) == 0 && (major2) <  10 || \
   (major1) == 0 && (major2) == 10 && (minor) <= 8)
 
+/* package directory-1.2.6.2 */
+#define VERSION_directory "1.2.6.2"
+#define MIN_VERSION_directory(major1,major2,minor) (\
+  (major1) <  1 || \
+  (major1) == 1 && (major2) <  2 || \
+  (major1) == 1 && (major2) == 2 && (minor) <= 6)
+
 /* package hslogger-1.2.10 */
 #define VERSION_hslogger "1.2.10"
 #define MIN_VERSION_hslogger(major1,major2,minor) (\
@@ -97,6 +104,13 @@
   (major1) <  0 || \
   (major1) == 0 && (major2) <  9 || \
   (major1) == 0 && (major2) == 9 && (minor) <= 1)
+
+/* package split-0.2.3.1 */
+#define VERSION_split "0.2.3.1"
+#define MIN_VERSION_split(major1,major2,minor) (\
+  (major1) <  0 || \
+  (major1) == 0 && (major2) <  2 || \
+  (major1) == 0 && (major2) == 2 && (minor) <= 3)
 
 /* package text-1.2.2.1 */
 #define VERSION_text "1.2.2.1"
@@ -203,7 +217,7 @@
   (major1) == 2 && (major2) <  26 || \
   (major1) == 2 && (major2) == 26 && (minor) <= 0)
 
-#define CURRENT_COMPONENT_ID "use-haskell-0.1.0.0-Kq2TIO93odr3gBAOwkBgn3"
+#define CURRENT_COMPONENT_ID "use-haskell-0.1.0.0-BEek008yR3CGTkyJsqGlhh"
 
-#define CURRENT_PACKAGE_KEY "use-haskell-0.1.0.0-Kq2TIO93odr3gBAOwkBgn3"
+#define CURRENT_PACKAGE_KEY "use-haskell-0.1.0.0-BEek008yR3CGTkyJsqGlhh"
 
