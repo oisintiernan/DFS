@@ -87,7 +87,7 @@ api = Proxy
 -- not be so. To add a news endpoint, define it in type API above, and add and implement a handler here.
 server :: Server API
 server = loadEnvironmentVariable
-    :<|> getREADME
+    :<|> download
     :<|> storeMessage
     :<|> searchMessage
     :<|> performRESTCall
@@ -118,21 +118,17 @@ server = loadEnvironmentVariable
             Just e' -> return $ ResponseData e'
 
 
-    getREADME::Maybe FilePath -> Handler FileData -- fns with no input, second getREADME' is for demo below
-    getREADME (Just ms) = liftIO $ do
+    download::Maybe FilePath -> Handler FileData -- fns with no input, second getREADME' is for demo below
+    download (Just ms) = liftIO $ do
       warnLog "got here"
+      putStrLn ms
       s       <- readFile ms
       return $ FileData ms s (splitFP ms !! (length (splitFP ms) - 2)) (last $ splitFP ms) 
     
     storeMessage :: Message -> Handler Bool
     storeMessage msg@(Message key _) = liftIO $ do
       warnLog $ "Storing message under key " ++ key ++ "."
-
-      -- upsert creates a new record if the identified record does not exist, or if
-      -- it does exist, it updates the record with the passed document content
-      -- As you can see, this takes a single line of code
-      withMongoDbConnection $ upsert (select ["name" =: key] "MESSAGE_RECORD") $ toBSON msg
-
+      
       return True  -- as this is a simple demo I'm not checking anything
 
     searchMessage :: Maybe String -> Handler [Message]
@@ -179,19 +175,26 @@ server = loadEnvironmentVariable
              manager <- newManager defaultManagerSettings
              return (SC.ClientEnv manager (SC.BaseUrl SC.Http "hackage.haskell.org" 80 ""))
 
-
-    files:: Maybe FilePath -> Handler FileHere
-    files (Just path) = liftIO $ do
-      warnLog $ "looking in directory" ++ show path
-      let path2 = "/home/ois/DFS/use-haskell/src/TF/" ++ path
-      contents <- getDirectoryContents path
-      return $ FileHere contents
-
-    files Nothing = liftIO $ do
-      let path2="/home/ois/DFS/use-haskell/src/TF"
-      warnLog $ "looking in directory" ++ show path2
+    files:: Handler FileHere
+    files = liftIO $ do
+      warnLog $ "looking in directory"
+      let path2 = "/home/ois/DFS/use-haskell/src/TF/"
       contents <- getDirectoryContents path2
       return $ FileHere contents
+
+
+    --files:: Maybe FilePath -> Handler FileHere
+    --files (Just path) = liftIO $ do
+      --warnLog $ "looking in directory" ++ show path
+      --let path2 = "/home/ois/DFS/use-haskell/src/TF/" ++ path
+      --contents <- getDirectoryContents path
+      --return $ FileHere contents
+
+    --files Nothing = liftIO $ do
+      --let path2="/home/ois/DFS/use-haskell/src/TF"
+      --warnLog $ "looking in directory" ++ show path2
+      --contents <- getDirectoryContents path2
+      --return $ FileHere contents
 
     init:: Handler Init
     init = liftIO $ do

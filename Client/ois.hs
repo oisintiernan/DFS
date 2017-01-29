@@ -22,6 +22,7 @@ import qualified Data.ByteString.Lazy.Char8   as L
 import qualified Data.List                    as DL
 import qualified Data.List.Split              as DLS
 import           Data.Maybe                   (catMaybes)
+import           Control.Monad
 import           Data.Text                    (pack, unpack)
 import           Data.Time.Clock              (UTCTime, getCurrentTime)
 import           Data.Time.Format             (defaultTimeLocale, formatTime)
@@ -54,11 +55,16 @@ data Init = Init { purpose:: String
                   ,security:: String
                  } deriving (Generic,A.ToJSON,A.FromJSON,Show)
 
+data Auth = Auth { user:: String
+                  ,psd :: String
+                 } deriving (Generic,A.ToJSON,A.FromJSON,Show)
+
 
 
 --FunctionS
-getF       = "http://localhost:8080/getREADME?path=" :: String
+getF       = "http://localhost:8080/download?path=" :: String
 viewF      = "http://localhost:8080/files?path="     :: String
+viewF1      = "http://localhost:8080/files"          :: String
 initialise = "http://localhost:8080/init"            :: String
 --Always
 pathL      = "/home/ois/DFS/use-haskell/src/TF/"     :: String
@@ -81,8 +87,8 @@ control = do
   putStrLn "Enter Function"
   a <- getLine
   case a of
-    "view" -> viewProjects >> control
-    "read" -> readFiles >> control
+    "view" -> viewC >> control
+    "read" -> readF >> control
     _      -> putStrLn "Invalid function. Try again" >> control
   --case a of
     --"Y" -> viewProjects
@@ -94,8 +100,33 @@ fInit :: String -> String -> String -> IO()
 fInit purp funct secu = do
   putStrLn $ purp ++ funct ++ secu
 
---Functions available to the user
 
+
+
+
+encodeAuth :: Auth -> L.ByteString
+encodeAuth userAuth = do
+  A.encode userAuth
+
+getAuth :: String -> String -> Auth
+getAuth user pswd = Auth user pswd
+
+
+--postAuth :: L.ByteString
+--postAuth jsonUser = do
+
+                    
+listFiles :: IO(Maybe FileHere)
+listFiles = getAndParseL $ getJSON $ viewF1
+
+viewC :: IO()
+viewC = do
+  (fileObj) <- listFiles 
+  print "files on server:"
+  forM_ (location fileObj) print
+  
+
+--Functions available to the user
 viewProjects::IO()
 viewProjects = do
   d <-getAndParseL $ getJSON $ viewF ++ pathL
@@ -115,6 +146,15 @@ viewFiles = do
   file <- getLine
   d <-getAndParseL $ getJSON $ viewF ++ pathL ++ proj ++ "/" ++ file
   putStrLn "viewFiles"
+
+readF :: IO()
+readF = do
+  putStrLn "Which file would you like to read/edit"
+  file <- getLine
+  status <- getDirectoryContents cache
+  case (elem (file) (status)) of
+    True   -> getAndWriteCD1 file
+    False  -> getAndWrite1   file
 
 
 readFiles::IO()
@@ -149,6 +189,22 @@ getAndWriteCD proj file = do
   writeFile (cP ++ proj ++  "-" ++ file) a
   putStrLn $ "writing file: " ++ proj ++  "-" ++ file ++ " to current directory"
 
+getAndWrite1:: String -> IO()
+getAndWrite1 file = do
+  d <- getAndParseF $ getJSON $  getF ++ pathL ++ file
+--WRITING TO CACHE
+  writeFile (cache ++ filename d) (content d)
+--WRITING TO CURRENT PROJECTS
+  writeFile (cP ++ (filename d)) (content d)
+  putStrLn $ "writing file: " ++ file ++ " to both cache and currentProjects"
+
+getAndWriteCD1:: String -> IO()
+getAndWriteCD1 file = do
+  a <- readFile $ cache ++ file
+--WRITING TO CURRENT PROJECTS
+  writeFile (cP ++ file) a
+  putStrLn $ "writing file: " ++ file ++ " to current directory"
+
 
 
   --WRITING TO CURRENT PROJECTS
@@ -179,7 +235,6 @@ getAndParseF :: IO L.ByteString -> IO (Maybe FileData)
 getAndParseF url = do
   (A.decode <$> url) :: IO (Maybe FileData)
 
-
 --Decodde Haskell File types
 --TEXT FILES
 content :: Maybe FileData -> String
@@ -196,8 +251,8 @@ filename (Just (FileData _ _ _ filen)) = filen
 
 --VIEWING FILES
 location :: Maybe FileHere -> [FilePath]
-location (Just (FileHere [files])) = [files]
-
+location (Just  (FileHere files)) = files
+ 
 --INITIALISE
 purpos :: Maybe Init -> String
 purpos (Just (Init purpose _ _)) = purpose
