@@ -88,6 +88,7 @@ api = Proxy
 server :: Server API
 server = loadEnvironmentVariable
     :<|> download
+    :<|> update
     :<|> storeMessage
     :<|> searchMessage
     :<|> performRESTCall
@@ -125,6 +126,15 @@ server = loadEnvironmentVariable
       s       <- readFile ms
       return $ FileData ms s (splitFP ms !! (length (splitFP ms) - 2)) (last $ splitFP ms) 
     
+    update:: FileData -> Handler Bool
+    update (FileData path contents project filename) = liftIO $ do
+      warnLog "file recieved"
+      writeFile ("/home/ois/DFS/use-haskell/src/TF/" ++ filename) contents
+      putStrLn contents
+      return True
+
+
+
     storeMessage :: Message -> Handler Bool
     storeMessage msg@(Message key _) = liftIO $ do
       warnLog $ "Storing message under key " ++ key ++ "."
