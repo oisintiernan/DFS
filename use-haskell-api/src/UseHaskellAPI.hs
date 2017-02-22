@@ -56,7 +56,7 @@ data Instruction = Instruction { command :: String
                                } deriving (Show, Generic, FromJSON, ToJSON)
 
 data Instruction_U = Instruction_U { file    :: FileData
-                                   , ticket  :: Ticket
+                                   ,tick  :: Ticket
                                  } deriving (Show, Generic, FromJSON, ToJSON)
 
 

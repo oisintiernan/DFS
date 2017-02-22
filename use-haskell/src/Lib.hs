@@ -140,12 +140,25 @@ server = loadEnvironmentVariable
           let _file     = encryptDecrypt sk file
           return $ FileData e_content _file 
     
-    update:: FileData -> Handler Bool
-    update (FileData path contents) = liftIO $ do
-      warnLog "file recieved"
-      writeFile ("/home/ois/DFS/use-haskell/src/TF/") contents
-      putStrLn contents
-      return True
+    update:: Instruction_U -> Handler Bool
+    update (Instruction_U (FileData e_con e_fn) (Ticket e_u e_t e_sk)) = liftIO $ do
+      warnLog "got here"
+      let u     = encryptDecrypt sharedKey e_u
+      let t     = encryptDecrypt sharedKey e_t
+      let sk    = encryptDecrypt sharedKey e_sk
+      let con   = encryptDecrypt sk e_con
+      let fn    = encryptDecrypt sk e_fn
+      let filep = ("/home/ois/DFS/use-haskell/src/TF/"++ fn) ::FilePath
+      file_there <- doesFileExist (filep)
+      case file_there of
+        False -> do
+          warnLog "writing new file"
+          writeFile filep con
+          return True
+        True  -> do
+          warnLog "overwriting file"
+          writeFile filep con
+          return True
 
 
 
@@ -215,20 +228,6 @@ server = loadEnvironmentVariable
           let path2 = "/home/ois/DFS/use-haskell/src/TF/"
           contents <- getDirectoryContents path2
           return $ FileHere contents
-
-
-    --files:: Maybe FilePath -> Handler FileHere
-    --files (Just path) = liftIO $ do
-      --warnLog $ "looking in directory" ++ show path
-      --let path2 = "/home/ois/DFS/use-haskell/src/TF/" ++ path
-      --contents <- getDirectoryContents path
-      --return $ FileHere contents
-
-    --files Nothing = liftIO $ do
-      --let path2="/home/ois/DFS/use-haskell/src/TF"
-      --warnLog $ "looking in directory" ++ show path2
-      --contents <- getDirectoryContents path2
-      --return $ FileHere contents
 
     init:: Handler Init
     init = liftIO $ do

@@ -89,12 +89,12 @@ data Instruction = Instruction { command :: String
                                } deriving (Show, Generic, FromJSON, ToJSON)
 
 data Instruction_U = Instruction_U { file    :: FileData
-                                   , ticket  :: Ticket
+                                   , tick  :: Ticket
                                  } deriving (Show, Generic, FromJSON, ToJSON)
 
 type API = "load_environment_variables" :> QueryParam "name" String       :> Get  '[JSON] ResponseData
       :<|> "download"                   :> ReqBody '[JSON] Instruction    :> Post '[JSON] FileData
-      :<|> "update"                     :> ReqBody '[JSON] FileData       :> Post '[JSON] Bool
+      :<|> "update"                     :> ReqBody '[JSON] Instruction_U  :> Post '[JSON] Bool
       :<|> "storeMessage"               :> ReqBody '[JSON] Message        :> Post '[JSON] Bool
       :<|> "searchMessage"              :> QueryParam "name" String       :> Get  '[JSON] [Message]
       :<|> "performRESTCall"            :> QueryParam "filter" String     :> Get  '[JSON] ResponseData
@@ -108,7 +108,7 @@ restAPI = Proxy
 
 loadEnvVars           :: Maybe String       -> ClientM ResponseData
 download              :: Instruction        -> ClientM FileData
-update                :: FileData           -> ClientM Bool
+update                :: Instruction_U      -> ClientM Bool
 storeMessage          :: Message            -> ClientM Bool
 searchMessage         :: Maybe String       -> ClientM [Message]
 performRestCall       :: Maybe String       -> ClientM ResponseData
@@ -157,6 +157,7 @@ case res of
         --res2 <- runClientM (list (Ticket u t k)) (ClientEnv manager (BaseUrl Http authserverhost (8080) ""))
         --print res2
         j <- getLine
-        let e_filename = encryptDecrypt "ahdf" "TF1"
-        res3 <- runClientM (download (Instruction (e_filename) (Ticket u t k))) (ClientEnv manager (BaseUrl Http authserverhost (8080) ""))
+        let e_filename = encryptDecrypt "ahdf" "NewFile"
+        let e_contents = encryptDecrypt "ahdf" "This is a newfile"
+        res3 <- runClientM (update (Instruction_U (FileData e_contents e_filename) (Ticket u t k))) (ClientEnv manager (BaseUrl Http authserverhost (8080) ""))
         print res3
