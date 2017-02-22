@@ -23,6 +23,7 @@ data Message = Message { name    :: String
                        , message :: String
                        } deriving (Show, Generic, FromJSON, ToJSON, ToBSON, FromBSON)
 
+
 deriving instance FromBSON String  -- we need these as BSON does not provide
 deriving instance ToBSON   String
 
@@ -32,10 +33,8 @@ deriving instance ToBSON   String
 data ResponseData = ResponseData { response :: String
                                  } deriving (Generic, ToJSON, FromJSON,FromBSON, Show)
 
-data FileData = FileData { filep::FilePath
-                         , contents::String
-                         , project:: String
-                         , filen:: String
+data FileData = FileData { contents::String
+                         , filen   :: String
                          } deriving (Generic,ToJSON,FromJSON,FromBSON,Show)
 
 
@@ -47,13 +46,26 @@ data Init = Init { purpose:: String
                   ,security:: String
                  } deriving (Generic,ToJSON,FromJSON,FromBSON,Show)
 
+data Ticket  =  Ticket { usern    :: String
+                       , expTime  :: String
+                       , seshKey  :: String
+                       } deriving (Show, Generic, FromJSON, ToJSON)
+
+data Instruction = Instruction { command :: String
+                               , ticket  :: Ticket
+                               } deriving (Show, Generic, FromJSON, ToJSON)
+
+data Instruction_U = Instruction_U { file    :: FileData
+                                   , ticket  :: Ticket
+                                 } deriving (Show, Generic, FromJSON, ToJSON)
 
 
-type API = "load_environment_variables" :> QueryParam "name" String :> Get '[JSON] ResponseData
-      :<|> "download"                   :> QueryParam "path" FilePath :> Get '[JSON] FileData
-      :<|> "update"                     :> ReqBody '[JSON] FileData  :> Post '[JSON] Bool
-      :<|> "storeMessage"               :> ReqBody '[JSON] Message  :> Post '[JSON] Bool
-      :<|> "searchMessage"              :> QueryParam "name" String :> Get '[JSON] [Message]
-      :<|> "performRESTCall"            :> QueryParam "filter" String  :> Get '[JSON] ResponseData
-      :<|> "files"                      :> Get '[JSON] FileHere
+
+type API = "load_environment_variables" :> QueryParam "name" String        :> Get  '[JSON] ResponseData
+      :<|> "download"                   :> ReqBody '[JSON] Instruction     :> Post '[JSON] FileData
+      :<|> "update"                     :> ReqBody '[JSON] Instruction_U   :> Post '[JSON] Bool
+      :<|> "storeMessage"               :> ReqBody '[JSON] Message         :> Post '[JSON] Bool
+      :<|> "searchMessage"              :> QueryParam "name" String        :> Get  '[JSON] [Message]
+      :<|> "performRESTCall"            :> QueryParam "filter" String      :> Get  '[JSON] ResponseData
+      :<|> "list"                       :> ReqBody '[JSON] Ticket          :> Post '[JSON] FileHere
       :<|> "init"                       :> Get '[JSON] Init

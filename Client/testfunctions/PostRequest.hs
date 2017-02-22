@@ -57,9 +57,7 @@ data AuthRes = AuthRes { sessionKey :: String
 data ResponseData = ResponseData { response :: String
                                  } deriving (Generic, ToJSON, FromJSON, Show)
 
-data FileData = FileData { filep    ::FilePath
-                         , contents ::String
-                         , project  :: String
+data FileData = FileData { contents :: String
                          , filen    :: String
                          } deriving (Generic,ToJSON,FromJSON,Show)
 
@@ -86,34 +84,42 @@ data Ticket  =  Ticket { usern    :: String
                        , seshKey  :: String
                        } deriving (Show, Generic, FromJSON, ToJSON)
 
-type API = "load_environment_variables" :> QueryParam "name" String :> Get '[JSON] ResponseData
-      :<|> "download"                  :> QueryParam "path" FilePath :> Get '[JSON] FileData
-      :<|> "update"                     :> ReqBody '[JSON] FileData  :> Post '[JSON] Bool
-      :<|> "storeMessage"               :> ReqBody '[JSON] Message  :> Post '[JSON] Bool
-      :<|> "searchMessage"              :> QueryParam "name" String :> Get '[JSON] [Message]
-      :<|> "performRESTCall"            :> QueryParam "filter" String  :> Get '[JSON] ResponseData
-      :<|> "files"                      :> Get '[JSON] FileHere
-      :<|> "init"                       :> Get '[JSON] Init
-      :<|> "authInit"                   :> ReqBody '[JSON] SignIn :> Post '[JSON] AuthRes
-      :<|> "ticketGrantingService"      :> ReqBody '[JSON] TGT  :> Post '[JSON] Ticket
+data Instruction = Instruction { command :: String
+                               , ticket  :: Ticket
+                               } deriving (Show, Generic, FromJSON, ToJSON)
+
+data Instruction_U = Instruction_U { file    :: FileData
+                                   , ticket  :: Ticket
+                                 } deriving (Show, Generic, FromJSON, ToJSON)
+
+type API = "load_environment_variables" :> QueryParam "name" String       :> Get  '[JSON] ResponseData
+      :<|> "download"                   :> ReqBody '[JSON] Instruction    :> Post '[JSON] FileData
+      :<|> "update"                     :> ReqBody '[JSON] FileData       :> Post '[JSON] Bool
+      :<|> "storeMessage"               :> ReqBody '[JSON] Message        :> Post '[JSON] Bool
+      :<|> "searchMessage"              :> QueryParam "name" String       :> Get  '[JSON] [Message]
+      :<|> "performRESTCall"            :> QueryParam "filter" String     :> Get  '[JSON] ResponseData
+      :<|> "list"                       :> ReqBody '[JSON] Ticket         :> Post '[JSON] FileHere
+      :<|> "init"                       :> Get     '[JSON] Init
+      :<|> "authInit"                   :> ReqBody '[JSON] SignIn         :> Post '[JSON] AuthRes
+      :<|> "ticketGrantingService"      :> ReqBody '[JSON] TGT            :> Post '[JSON] Ticket
 
 restAPI :: Proxy API
 restAPI = Proxy
 
-loadEnvVars     :: Maybe String       -> ClientM ResponseData
-download        :: Maybe FilePath     -> ClientM FileData
-update          :: FileData          -> ClientM Bool
-storeMessage    :: Message            -> ClientM Bool
-searchMessage   :: Maybe String       -> ClientM [Message]
-performRestCall :: Maybe String       -> ClientM ResponseData
-file            :: ClientM FileHere
-init            :: ClientM Init
-authInit        :: SignIn             -> ClientM AuthRes
-ticketGrantingService :: TGT          -> ClientM Ticket
+loadEnvVars           :: Maybe String       -> ClientM ResponseData
+download              :: Instruction        -> ClientM FileData
+update                :: FileData           -> ClientM Bool
+storeMessage          :: Message            -> ClientM Bool
+searchMessage         :: Maybe String       -> ClientM [Message]
+performRestCall       :: Maybe String       -> ClientM ResponseData
+list                  :: Ticket             -> ClientM FileHere
+init                  :: ClientM Init
+authInit              :: SignIn             -> ClientM AuthRes
+ticketGrantingService :: TGT                -> ClientM Ticket
 
 
 
-loadEnvVars :<|> download :<|> update:<|> storeMessage :<|> searchMessage :<|> performRestCall :<|> file :<|> init  :<|> authInit :<|> ticketGrantingService = client restAPI
+loadEnvVars :<|> download :<|> update:<|> storeMessage :<|> searchMessage :<|> performRestCall :<|> list :<|> init  :<|> authInit :<|> ticketGrantingService = client restAPI
 
 encryptDecrypt :: String -> String -> String
 encryptDecrypt key text = zipWith (\a b -> chr $ xor (ord a) (ord b)) (cycle key) text
@@ -122,6 +128,8 @@ main :: IO()
 main = do
 manager <- newManager defaultManagerSettings
 res <- runClientM (authInit (SignIn "oisin" "][A[\\")) (ClientEnv manager (BaseUrl Http authserverhost (8000) ""))
+
+--post request
 case res of
   Left err -> do
     print "ran into some errors der"
@@ -141,4 +149,14 @@ case res of
         print "error alert"
       Right (ticketGrantingService) -> do
         let (Ticket u t k) = ticketGrantingService
-        print u 
+        let un  = encryptDecrypt "1234" u
+        let ti  = encryptDecrypt "1234" t
+        let key = encryptDecrypt "1234" k
+        print $ un ++ " " ++ ti ++ " " ++ key ++ " "
+        --b <- getLine
+        --res2 <- runClientM (list (Ticket u t k)) (ClientEnv manager (BaseUrl Http authserverhost (8080) ""))
+        --print res2
+        j <- getLine
+        let e_filename = encryptDecrypt "ahdf" "TF1"
+        res3 <- runClientM (download (Instruction (e_filename) (Ticket u t k))) (ClientEnv manager (BaseUrl Http authserverhost (8080) ""))
+        print res3

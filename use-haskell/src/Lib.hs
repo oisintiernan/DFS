@@ -24,6 +24,8 @@ import           Control.Monad.Trans.Resource
 import           Data.Aeson
 import           Data.Aeson.TH
 import           Data.Bson.Generic
+import           Data.Char
+import           Data.Bits
 import qualified Data.ByteString.Lazy         as L
 import qualified Data.List                    as DL
 import qualified Data.List.Split              as DLS
@@ -51,6 +53,8 @@ import           System.Log.Handler.Syslog
 import           System.Log.Logger
 import           UseHaskellAPI
 
+
+sharedKey      = "1234"                  :: String
 
 startApp :: IO ()    -- set up wai logger for service to output apache style logging for rest calls
 startApp = withLogging $ \ aplogger -> do
@@ -92,7 +96,7 @@ server = loadEnvironmentVariable
     :<|> storeMessage
     :<|> searchMessage
     :<|> performRESTCall
-    :<|> files
+    :<|> list
     :<|> init
 
   where
@@ -119,19 +123,33 @@ server = loadEnvironmentVariable
             Just e' -> return $ ResponseData e'
 
 
-    download::Maybe FilePath -> Handler FileData -- fns with no input, second getREADME' is for demo below
-    download (Just ms) = liftIO $ do
+    download:: Instruction -> Handler FileData -- fns with no input, second getREADME' is for demo below
+    download (Instruction e_file (Ticket e_u e_t e_sk)) = liftIO $ do
       warnLog "got here"
-      putStrLn ms
-      s       <- readFile ms
-      return $ FileData ms s (splitFP ms !! (length (splitFP ms) - 2)) (last $ splitFP ms) 
+      let u    = encryptDecrypt sharedKey e_u
+      let t    = encryptDecrypt sharedKey e_t
+      let sk   = encryptDecrypt sharedKey e_sk
+      let file = encryptDecrypt sk e_file
+      let filep = ("/home/ois/DFS/use-haskell/src/TF/"++ file) ::FilePath
+      file_there <- doesFileExist (filep)
+      case file_there of
+        False -> return $ FileData "" ""
+        True  -> do
+          content <- readFile $ "/home/ois/DFS/use-haskell/src/TF/"++file
+          let e_content = encryptDecrypt sk content
+          let _file     = encryptDecrypt sk file
+          return $ FileData e_content _file 
     
     update:: FileData -> Handler Bool
-    update (FileData path contents project filename) = liftIO $ do
+    update (FileData path contents) = liftIO $ do
       warnLog "file recieved"
-      writeFile ("/home/ois/DFS/use-haskell/src/TF/" ++ filename) contents
+      writeFile ("/home/ois/DFS/use-haskell/src/TF/") contents
       putStrLn contents
       return True
+
+
+
+
 
 
 
@@ -185,12 +203,18 @@ server = loadEnvironmentVariable
              manager <- newManager defaultManagerSettings
              return (SC.ClientEnv manager (SC.BaseUrl SC.Http "hackage.haskell.org" 80 ""))
 
-    files:: Handler FileHere
-    files = liftIO $ do
+    list:: Ticket -> Handler FileHere
+    list (Ticket e_u e_t e_sk) = liftIO $ do
       warnLog $ "looking in directory"
-      let path2 = "/home/ois/DFS/use-haskell/src/TF/"
-      contents <- getDirectoryContents path2
-      return $ FileHere contents
+      let u = encryptDecrypt sharedKey e_u
+      let t = encryptDecrypt sharedKey e_t
+      let sk = encryptDecrypt sharedKey e_sk
+      case t of
+        "0" -> return $ FileHere []
+        _ -> do
+          let path2 = "/home/ois/DFS/use-haskell/src/TF/"
+          contents <- getDirectoryContents path2
+          return $ FileHere contents
 
 
     --files:: Maybe FilePath -> Handler FileHere
@@ -233,6 +257,9 @@ splitFP :: String -> [String]
 splitFP fp = do
   DLS.splitOn "/" fp
 
+encryptDecrypt :: String -> String -> String
+encryptDecrypt key text = zipWith (\a b -> chr $ xor (ord a) (ord b)) (cycle key) text
+
 
 -- | Logging stuff
 iso8601 :: UTCTime -> String
@@ -267,6 +294,7 @@ withLogging act = withStdoutLogger $ \aplogger -> do
 -- generally run as follows:
 --        withMongoDbConnection $ do ...
 --
+
 withMongoDbConnection :: Action IO a -> IO a
 withMongoDbConnection act  = do
   ip <- mongoDbIp
