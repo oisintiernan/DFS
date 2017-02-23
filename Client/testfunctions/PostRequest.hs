@@ -102,6 +102,7 @@ type API = "load_environment_variables" :> QueryParam "name" String       :> Get
       :<|> "init"                       :> Get     '[JSON] Init
       :<|> "authInit"                   :> ReqBody '[JSON] SignIn         :> Post '[JSON] AuthRes
       :<|> "ticketGrantingService"      :> ReqBody '[JSON] TGT            :> Post '[JSON] Ticket
+      :<|> "listAllFiles"               :> ReqBody '[JSON] Ticket         :> Post '[JSON] FileHere
 
 restAPI :: Proxy API
 restAPI = Proxy
@@ -116,10 +117,11 @@ list                  :: Ticket             -> ClientM FileHere
 init                  :: ClientM Init
 authInit              :: SignIn             -> ClientM AuthRes
 ticketGrantingService :: TGT                -> ClientM Ticket
+listAllFiles          :: Ticket             -> ClientM FileHere
 
 
 
-loadEnvVars :<|> download :<|> update:<|> storeMessage :<|> searchMessage :<|> performRestCall :<|> list :<|> init  :<|> authInit :<|> ticketGrantingService = client restAPI
+loadEnvVars :<|> download :<|> update:<|> storeMessage :<|> searchMessage :<|> performRestCall :<|> list :<|> init  :<|> authInit :<|> ticketGrantingService :<|> listAllFiles = client restAPI
 
 encryptDecrypt :: String -> String -> String
 encryptDecrypt key text = zipWith (\a b -> chr $ xor (ord a) (ord b)) (cycle key) text
@@ -159,5 +161,5 @@ case res of
         j <- getLine
         let e_filename = encryptDecrypt "ahdf" "NewFile"
         let e_contents = encryptDecrypt "ahdf" "This is a newfile"
-        res3 <- runClientM (update (Instruction_U (FileData e_contents e_filename) (Ticket u t k))) (ClientEnv manager (BaseUrl Http authserverhost (8080) ""))
+        res3 <- runClientM (listAllFiles (Ticket u t k)) (ClientEnv manager (BaseUrl Http authserverhost (8080) ""))
         print res3
